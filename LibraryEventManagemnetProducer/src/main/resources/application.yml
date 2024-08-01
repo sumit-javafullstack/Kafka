@@ -1,0 +1,21 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: LibraryEventManagemnetProducer
+  kafka:
+    topic: library-events
+    template:
+      default-topic: library-events
+    producer:
+      bootstrap-servers: localhost:9092,localhost:9093,localhost:9094
+      properties:
+        acks: all
+        retries: 10
+
+    admin:
+      properties:
+        bootstrap.servers: localhost:9092,localhost:9093,localhost:9094
+
+

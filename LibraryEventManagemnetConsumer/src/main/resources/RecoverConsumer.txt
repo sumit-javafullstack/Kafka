@@ -1,0 +1,70 @@
+*************************************************************************************************
+    Recovery Process:
+       Approach-1:
+       publishing message to new kafka topic.
+            In case of consumer failure, we will store data in new topic and will create another
+            consumer to re-process same failed record.
+       Approach-2:
+       publishing data to database.
+            Publishing message to database and creating scheduler which will reprocess again.
+
+*************************************************************************************************
+ Approach-1:
+    publishing message to new kafka topic.
+
+ NOTE: By default, the dead-letter record is sent to a topic named <originalTopic>.DLT (the original topic name suffixed
+ with .DLT) and to the same partition as the original record. Therefore, when you use the default resolver,
+ the dead-letter topic must have at least as many partitions as the original topic.
+
+ ->
+     public DeadLetterPublishingRecoverer publishRecoverer() {
+
+         DeadLetterPublishingRecoverer recoverer =
+             new DeadLetterPublishingRecoverer(
+                 template,
+                 (r, e) -> {
+                   if (e instanceof CustomeException) {
+                     return new TopicPartition(retryTopic, r.partition());
+                   } else {
+                     return new TopicPartition(deadLetterTopic, r.partition());
+                   }
+                 });
+         return recoverer;
+       }
+  ----->>>>
+      @Autowired
+      KafkaTemplate template;
+      ->Since we have to send back failed record to kafka topic again, we need KafkaTemplate.
+
+      ->It is not mandatory to create bean of producerFactory() like we did in LibraryEventProducer,
+        if we just give like
+            @Autowired
+            KafkaTemplate template;
+        It will take the take value for server, key and value serializer from application.yaml file.
+
+      ->If the exception is CustomeException then data will be recovered in retryTopic else deadLetterTopic
+----->>>>
+    -> created LibraryEventsRetryConsumer consumer to consumer data from library-events.DLT partition
+
+----->>>
+    //props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+    -> This is configuration in consumerconfig class is not mandatory, if we don't give this configuration, it will pick
+        from
+        @KafkaListener(
+              topics = {"library-events.DLT"},
+              groupId = "library-events-listener-group-retry",
+              containerFactory = "kafkaListenerContainerFactoryPullDataWhenPartitionsUpdates")
+
+*************************************************************************************************
+ Approach-2:
+    publishing message to database:
+
+*************************************************************************************************
+
+
+*************************************************************************************************
+
+
+*************************************************************************************************
+*
+

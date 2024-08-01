@@ -1,0 +1,28 @@
+*************************************************************************************************
+Why retry and recovery is important?
+    -> When kafka consumer gets failed while because of processing/broker outage , then the record consumed by
+        kafka consumer will be lost and also offset will move to next, and It will look for to consume next message published
+        to the topic.
+*************************************************************************************************
+factory.setCommonErrorHandler():
+    -> This is the method we use for handling error in consumer.
+
+new FixedBackOff(12000L,3);:
+    -> Here we are trying to retry consuming message 3 times after 12 sec interval.
+    -> listen() will executes 3 times and will try to consumer same message 3 times.
+
+errorHandle.setRetryListeners(((record , ex,  delivery):
+    -> It basically listen to the retry consumer. It provide details like
+            1) which record got failed
+            2) total number of delivery attempt
+            3) exception because of which consumer is failing
+
+exceptionList.forEach(errorHandle::addRetryableExceptions):
+    ->Here we can mention list of exception that should be retry.
+
+*************************************************************************************************
+
+
+*************************************************************************************************
+
+

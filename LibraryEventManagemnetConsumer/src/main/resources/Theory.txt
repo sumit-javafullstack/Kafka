@@ -1,0 +1,80 @@
+*************************************************************************************************
+why consumer reads every time different records?
+
+    -> enable.auto.commit=true, by default. Which means when kafka consumed the messages it will
+       commit offsets in __offset_topic automatically.
+    -> We can commit offsets in the  __offset_topic with many different options like below:
+
+    -> Committing Offsets
+       Several options are provided for committing offsets. If the enable.auto.commit consumer property is true,
+       kafka will auto-commit the offsets according to its configuration. If it is false,
+       the containers support the following AckMode s.
+
+       The consumer poll() method will return one or more ConsumerRecords; the MessageListener is called for
+       each record; the following describes the action taken by the container for each AckMode :
+
+       RECORD - commit the offset when the listener returns after processing the record.
+       BATCH - commit the offset when all the records returned by the poll() have been processed.(Default)
+       TIME - commit the offset when all the records returned by the poll() have been processed as long as the ackTime since the last commit has been exceeded.
+       COUNT - commit the offset when all the records returned by the poll() have been processed as long as ackCount records have been received since the last commit.
+       COUNT_TIME - similar to TIME and COUNT but the commit is performed if either condition is true.
+       MANUAL - the message listener is responsible to acknowledge() the Acknowledgment; after which, the same semantics as BATCH are applied.
+       MANUAL_IMMEDIATE - commit the offset immediately when the Acknowledgment.acknowledge() method is called by the listener.
+
+*************************************************************************************************
+Heartbeat mechanism and Re-balancing:
+
+        -> Since each instance of kafka consumer is assigned with each partition(ideal scenarios)
+           kafka instances keep on sending signal to group coordinator.
+
+        ->  As long as the consumer is sending heartbeats at regular intervals (setting heartbeat.interval.ms),
+           it is assumed to be alive, well, and processing messages from its partitions.(default= 3 sec)
+
+        ->  If the consumer stops sending heartbeats for long enough (the session.timeout.ms setting),
+            its session will time out and the group coordinator will consider it dead and trigger a re-balance.
+
+*************************************************************************************************
+    props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, consumerOffset);
+    factory.setConcurrency(4); // Number of partitions
+    Class Name: LibraryEventsConsumer
+
+    -> With the above configuration , we are setting consume policy as latest and 4 instance of
+       same consumer has been assigned to retrieved the data parallel.
+
+    -> when ever data gets committed to to any partitions , the respective consumer gets
+       triggered automatically.
+*************************************************************************************************
+    // props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, consumerOffset);
+    factory.getContainerProperties().setPollTimeout(3000);
+    Class NAme: ConsumerConsumingDataInInterval
+
+    -> Here as well we are running 4 instances of consumers parallel but consumer won't get triggered
+       as soon s data inserted into partitions.
+    -> Consumer will check partition after every 3 seconds and in case of any new data, it will consume.
+
+    -> In short, consuming in time interval.
+*************************************************************************************************
+Validating parallelism:
+    1) Need to add another new arguments
+       -> ConsumerRecord<Integer, String> consumerRecord, Consumer<?, ?> consumer.
+    2) print the log
+            // Log the partitions assigned to this consumer
+            consumer
+                .assignment()
+                .forEach(
+                    topicPartition -> {
+                      System.out.printf(
+                          "Consumer assigned to partition: %s-%d%n",
+                          topicPartition.topic(), topicPartition.partition());
+                    });
+Output:
+Consumer assigned to partition: library-events-0
+Consumer assigned to partition: library-events-1
+Consumer assigned to partition: library-events-2
+*************************************************************************************************
+
+
+
+*************************************************************************************************
+
+
